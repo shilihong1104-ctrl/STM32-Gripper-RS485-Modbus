@@ -104,6 +104,13 @@ static void App_Loop(void)
         g_lastKeyTick = now;
         KeyEvent_t evt = KEY_Process();
         if (evt == KEY_EVENT_PRESS) {
+            /* 堵转保护触发后，按键先解除保护再动作 */
+            if (MotorProtect_GetState() == PROTECT_STATE_STALLED) {
+                Gripper_ClearStallProtect();
+                MotorProtect_Reset();
+                printf("[KEY] Stall cleared, motor re-enabled\r\n");
+            }
+
             if (g_gripState == GRIP_STATE_CLOSED) {
                 g_targetPulse = GRIPPER_OPEN_PULSE;
                 g_gripState   = GRIP_STATE_OPENED;
@@ -121,13 +128,32 @@ static void App_Loop(void)
     /* 周期读取 + 堵转保护 + 打印 100ms */
     if ((now - g_lastPrintTick) >= PRINT_PERIOD_MS) {
         g_lastPrintTick = now;
+
         int32_t  actualPos = 0;
-        uint16_t faultCode = 0;
-        Gripper_GetActualPos(&actualPos);
-        Gripper_GetFaultCode(&faultCode);
-        MotorProtect_Update(g_targetPulse, actualPos);
-        printf("目标脉冲：%ld，实际位置：%ld，故障码：%u\r\n",
-               (long)g_targetPulse, (long)actualPos, faultCode);
+        uint8_t  motorSta  = 0;
+        uint8_t  stallFlag = 0;
+        uint8_t  arrived   = 0;
+        uint8_t  posValid  = 0U;
+
+        /* 读取实际位置，通信成功才参与堵转判定 */
+        posValid = Gripper_GetActualPos(&actualPos);
+
+        /* 读取驱动器硬件状态 */
+        Gripper_GetMotorStatus(&motorSta);
+        Gripper_GetStallFlag(&stallFlag);
+        Gripper_GetArrivedFlag(&arrived);
+
+        /* 软件堵转保护：仅在位置数据有效时判定，避免通信失败 actualPos=0 误判 */
+        MotorProtect_Update(g_targetPulse, actualPos, posValid);
+
+        /* 硬件堵转标志触发：立即关电机并标记堵转 */
+        if (stallFlag == 1U) {
+            MotorProtect_TriggerStall();
+            printf("[PROTECT] Hardware stall flag detected, motor disabled\r\n");
+        }
+
+        printf("目标脉冲：%ld，实际位置：%ld，状态：%u，堵转：%u，到位：%u\r\n",
+               (long)g_targetPulse, (long)actualPos, motorSta, stallFlag, arrived);
     }
 }
 

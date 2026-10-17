@@ -140,6 +140,52 @@ MB_Status_t Modbus_ReadHoldingRegs(uint8_t slave, uint16_t regAddr, uint16_t reg
     return MB_OK;
 }
 
+/* ======== 读输入寄存器 0x04 ======== */
+MB_Status_t Modbus_ReadInputRegs(uint8_t slave, uint16_t regAddr, uint16_t regCnt, uint16_t *outRegs)
+{
+    uint8_t req[6];
+    uint8_t resp[MB_MAX_FRAME_LEN];
+    MB_Status_t st;
+
+    if ((regCnt == 0U) || (outRegs == NULL)) {
+        return MB_ERR_LENGTH;
+    }
+
+    /* 请求：[Slave][04][RegHi][RegLo][NumHi][NumLo] */
+    req[0] = slave;
+    req[1] = MB_FUNC_READ_INPUT;
+    req[2] = (uint8_t)((regAddr >> 8) & 0xFFU);
+    req[3] = (uint8_t)(regAddr & 0xFFU);
+    req[4] = (uint8_t)((regCnt >> 8) & 0xFFU);
+    req[5] = (uint8_t)(regCnt & 0xFFU);
+
+    uint16_t rlen = Modbus_Transaction(req, 6U, resp, sizeof(resp));
+    if (rlen == 0U) {
+        return MB_ERR_TIMEOUT;
+    }
+
+    st = Modbus_VerifyResp(resp, rlen, slave, MB_FUNC_READ_INPUT);
+    if (st != MB_OK) {
+        return st;
+    }
+
+    /* 应答：[Slave][04][ByteCount][Data...][CRC] */
+    uint8_t byteCnt = resp[2];
+    if (byteCnt != (uint8_t)(regCnt * 2U)) {
+        return MB_ERR_LENGTH;
+    }
+    if (rlen != (uint16_t)(5U + byteCnt)) {
+        return MB_ERR_LENGTH;
+    }
+
+    /* 大端转 uint16_t */
+    for (uint16_t i = 0U; i < regCnt; i++) {
+        outRegs[i] = ((uint16_t)resp[3U + i * 2U] << 8) | (uint16_t)resp[4U + i * 2U];
+    }
+
+    return MB_OK;
+}
+
 /* ======== 写单个寄存器 0x06 ======== */
 MB_Status_t Modbus_WriteSingleReg(uint8_t slave, uint16_t regAddr, uint16_t value)
 {

@@ -5,6 +5,7 @@
  *
  * 支持功能码：
  *   0x03 读保持寄存器
+ *   0x04 读输入寄存器（PD42S1 状态/位置读取使用此功能码）
  *   0x06 写单个寄存器
  *   0x10 写多个寄存器
  ******************************************************************************
@@ -20,6 +21,7 @@ extern "C" {
 
 /* Modbus 功能码 */
 #define MB_FUNC_READ_HOLDING      0x03U
+#define MB_FUNC_READ_INPUT        0x04U
 #define MB_FUNC_WRITE_SINGLE      0x06U
 #define MB_FUNC_WRITE_MULTIPLE    0x10U
 
@@ -53,6 +55,12 @@ uint16_t Modbus_CRC16(const uint8_t *data, uint16_t len);
  * @retval MB_OK 或错误码
  */
 MB_Status_t Modbus_ReadHoldingRegs(uint8_t slave, uint16_t regAddr, uint16_t regCnt, uint16_t *outRegs);
+
+/**
+ * @brief  读输入寄存器（功能码 0x04）
+ * @note   PD42S1 驱动器的位置/状态读取均使用此功能码
+ */
+MB_Status_t Modbus_ReadInputRegs(uint8_t slave, uint16_t regAddr, uint16_t regCnt, uint16_t *outRegs);
 
 /**
  * @brief  写单个寄存器（功能码 0x06）
