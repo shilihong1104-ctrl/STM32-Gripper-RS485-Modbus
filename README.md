@@ -218,7 +218,7 @@ solution/
 |----------|----------|------|
 | 按键切换开合（2000/0 脉冲循环） | `Core/main.c` App_Loop | 状态机：CLOSED↔OPENED，按键切换目标脉冲 |
 | 串口持续打印 | `Core/main.c` App_Loop | 每 100ms 打印：目标脉冲、实际位置、故障码 |
-| 堵转保护 | `App/motor_protect.c` | 差值 > 500 脉冲且持续 > 2000ms → 关闭电机；**通信读位置失败时跳过判定**，避免 actualPos=0 误触发 |
+| 堵转保护 | `App/motor_protect.c` | 差值 > 500 脉冲且持续 ≥ 2000ms → 关闭电机；**通信读位置失败时跳过判定**，避免 actualPos=0 误触发 |
 
 ---
 
