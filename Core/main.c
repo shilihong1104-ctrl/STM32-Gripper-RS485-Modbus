@@ -152,7 +152,7 @@ static void App_Loop(void)
             printf("[PROTECT] Hardware stall flag detected, motor disabled\r\n");
         }
 
-        printf("目标脉冲：%ld，实际位置：%ld，状态：%u，堵转：%u，到位：%u\r\n",
+        printf("目标脉冲：%ld，实际位置：%ld，故障码：%u，堵转：%u，到位：%u\r\n",
                (long)g_targetPulse, (long)actualPos, motorSta, stallFlag, arrived);
     }
 }
