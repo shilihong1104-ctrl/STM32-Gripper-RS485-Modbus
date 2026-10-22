@@ -20,6 +20,4 @@ Release/
 *.uvprojx
 *.uvoptx
 
-# 私密准备文档（不公开）
-*问答清单.md
-*模拟问答.md
+
